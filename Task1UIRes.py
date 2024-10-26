@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from patient import Patient
+from datetime import datetime
 
 
 
@@ -173,6 +174,10 @@ class Ui_MainWindow(object):
         # Connect the "Add Patient" button and "Delete Patient" button
         self.addPatientButton.clicked.connect(self.add_patient)
         self.deletePatientButton.clicked.connect(self.delete_patient)
+        # Connect updateButton to update schedule function
+        self.updateButton.clicked.connect(self.update_schedule)
+
+
 
     def add_patient(self):
         # Collect data from the input fields
@@ -211,6 +216,42 @@ class Ui_MainWindow(object):
         self.patientsComboBox.addItem(patient_info)
         for patient in self.patients:
                 print(f"ID: {patient.id}, Name: {patient.name}")
+
+    def sort_patients_by_severity(self):
+        # Create a new sorted array of patients by severity in descending order
+        severity_sorted_patients = sorted(self.patients, key=lambda patient: patient.severity, reverse=True)     
+        print("Patients sorted by severity (descending):")
+        for patient in severity_sorted_patients:
+            print(f"ID: {patient.id}, Name: {patient.name}, Severity: {patient.severity}")
+
+    def sort_patients_by_arrival(self):
+    # Function to convert time string to datetime object
+        def parse_time(patient):
+            return datetime.strptime(patient.arrival_time, "%H:%M")      
+        # Sort the patients by arrival time in ascending order
+        arrival_sorted_patients = sorted(self.patients, key=parse_time)
+        # Print or update the UI with sorted patients
+        print("Sorted Patients by Arrival Time (Ascending):")
+        for patient in arrival_sorted_patients:
+            print(f"ID: {patient.id}, Name: {patient.name}, Arrival Time: {patient.arrival_time}")
+
+    def sort_patients_by_departure(self):
+    # Function to convert time string to datetime object
+        def parse_time(patient):
+            return datetime.strptime(patient.departure_time, "%H:%M")      
+        # Sort the patients by departure time in ascending order
+        departure_sorted_patients = sorted(self.patients, key=parse_time)
+        # Print or update the UI with sorted patients
+        print("Sorted Patients by Departure Time (Ascending):")
+        for patient in departure_sorted_patients:
+            print(f"ID: {patient.id}, Name: {patient.name}, Departure Time: {patient.departure_time}")
+
+    def update_schedule(self):
+        if(self.severityRadioButton.isChecked()):
+            self.sort_patients_by_severity()
+        elif(self.arrivalRadioButton.isChecked()):
+            self.sort_patients_by_arrival()
+
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
