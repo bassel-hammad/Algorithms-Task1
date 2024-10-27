@@ -2,14 +2,11 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from patient import Patient
 from datetime import datetime
 
-
+COLORS = ["blue", "green", "yellow", "red"]
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
-
-        # Initialize the patient list
         self.patients = []
-
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(985, 703)
         font = QtGui.QFont()
@@ -152,6 +149,8 @@ class Ui_MainWindow(object):
         self.gridLayout.setObjectName("gridLayout")
         self.gridLayout_5.addLayout(self.gridLayout, 0, 1, 1, 2)
         self.label = QtWidgets.QLabel(self.centralwidget)
+        self.arrivalTimeEdit.setTime(QtCore.QTime(8, 0))
+        self.departureTimeEdit.setTime(QtCore.QTime(8, 0))
         font = QtGui.QFont()
         font.setPointSize(26)
         font.setBold(True)
@@ -176,81 +175,151 @@ class Ui_MainWindow(object):
         self.deletePatientButton.clicked.connect(self.delete_patient)
         # Connect updateButton to update schedule function
         self.updateButton.clicked.connect(self.update_schedule)
+        self.sorted_patients = {
+            "severity":[],
+            "arrival":[],
+            "departure":[]
+        }
+        self.waiting = 0
 
+
+
+
+
+    def reset_inputs(self):
+        self.idLineEdit.clear()
+        self.nameLineEdit.clear()
+        self.arrivalTimeEdit.setTime(QtCore.QTime(8, 0))
+        self.departureTimeEdit.setTime(QtCore.QTime(17, 0))
+        self.severitySpinBox.setValue(0)
 
 
     def add_patient(self):
-        # Collect data from the input fields
         id = self.idLineEdit.text()
         name = self.nameLineEdit.text()
         arrival_time = self.arrivalTimeEdit.time().toString("HH:mm")
         departure_time = self.departureTimeEdit.time().toString("HH:mm")
         severity = self.severitySpinBox.value()
-        # Create a Patient instance
         new_patient = Patient(id, name, arrival_time, departure_time, severity)
-        # Add the patient to the list
         self.patients.append(new_patient)
-        # Add the patient to the combo box
+        self.insert_patient(new_patient)
         self.add_patient_to_combo_box(new_patient)
-        # Optionally, clear input fields after adding
-        self.idLineEdit.clear()
-        self.nameLineEdit.clear()
-        self.arrivalTimeEdit.setTime(QtCore.QTime(0, 0))
-        self.departureTimeEdit.setTime(QtCore.QTime(0, 0))
-        self.severitySpinBox.setValue(0)
+        self.reset_inputs()
+
+
+
+    def color_cells(self, room_index, start_slot, end_slot, color):
+        for col in range(start_slot, end_slot + 1):
+            item = self.tableWidget.item(room_index, col)
+            if item is not None:
+                item.setBackground(color)  
+            else:
+                new_item = QtWidgets.QTableWidgetItem()
+                new_item.setBackground(color)
+                self.tableWidget.setItem(room_index, col, new_item)
+
+  
+    def insert_patient(self, new_patient):
+        if len(self.sorted_patients["severity"])==0 :
+            for key in self.sorted_patients:
+                self.sorted_patients[key].append(new_patient)
+        else:
+            for i in range(len(self.sorted_patients["severity"])):
+                if new_patient.severity > self.sorted_patients["severity"][i].severity:  
+                    self.sorted_patients["severity"].insert(i, new_patient)  
+                    break
+            else:
+                self.sorted_patients["severity"].append(new_patient)
+
+            for i in range(len(self.sorted_patients["arrival"])):
+                if new_patient.arrival_time < self.sorted_patients["arrival"][i].arrival_time: 
+                    self.sorted_patients["arrival"].insert(i, new_patient)  
+                    break
+            else:
+
+                self.sorted_patients["arrival"].append(new_patient)
+
+
+            for i in range(len(self.sorted_patients["departure"])):
+                if new_patient.departure_time < self.sorted_patients["departure"][i].departure_time:  
+                    self.sorted_patients["departure"].insert(i, new_patient)  
+                    break
+            else:
+                self.sorted_patients["departure"].append(new_patient)
+
 
     def delete_patient(self):
-        # Get the index of the selected patient in the combo box
         index = self.patientsComboBox.currentIndex()
-        if index >= 0:  # Check if a patient is selected
-            # Remove the selected patient from the patients list
+        if index >= 0:  
             del self.patients[index]
-            # Remove the patient from the combo box
             self.patientsComboBox.removeItem(index)
-            for patient in self.patients:
-                print(f"ID: {patient.id}, Name: {patient.name}")
 
     def add_patient_to_combo_box(self, patient):
-        # Format the patient information for display in the combo box
         patient_info = f"{patient.name} (ID: {patient.id}, Severity: {patient.severity}) (Arrival: {patient.arrival_time}, Departure: {patient.departure_time}) "
         self.patientsComboBox.addItem(patient_info)
-        for patient in self.patients:
-                print(f"ID: {patient.id}, Name: {patient.name}")
 
-    def sort_patients_by_severity(self):
-        # Create a new sorted array of patients by severity in descending order
-        severity_sorted_patients = sorted(self.patients, key=lambda patient: patient.severity, reverse=True)     
-        print("Patients sorted by severity (descending):")
-        for patient in severity_sorted_patients:
-            print(f"ID: {patient.id}, Name: {patient.name}, Severity: {patient.severity}")
 
-    def sort_patients_by_arrival(self):
-    # Function to convert time string to datetime object
-        def parse_time(patient):
-            return datetime.strptime(patient.arrival_time, "%H:%M")      
-        # Sort the patients by arrival time in ascending order
-        arrival_sorted_patients = sorted(self.patients, key=parse_time)
-        # Print or update the UI with sorted patients
-        print("Sorted Patients by Arrival Time (Ascending):")
-        for patient in arrival_sorted_patients:
-            print(f"ID: {patient.id}, Name: {patient.name}, Arrival Time: {patient.arrival_time}")
-
-    def sort_patients_by_departure(self):
-    # Function to convert time string to datetime object
-        def parse_time(patient):
-            return datetime.strptime(patient.departure_time, "%H:%M")      
-        # Sort the patients by departure time in ascending order
-        departure_sorted_patients = sorted(self.patients, key=parse_time)
-        # Print or update the UI with sorted patients
-        print("Sorted Patients by Departure Time (Ascending):")
-        for patient in departure_sorted_patients:
-            print(f"ID: {patient.id}, Name: {patient.name}, Departure Time: {patient.departure_time}")
 
     def update_schedule(self):
         if(self.severityRadioButton.isChecked()):
-            self.sort_patients_by_severity()
+            algo = "severity"
         elif(self.arrivalRadioButton.isChecked()):
-            self.sort_patients_by_arrival()
+            algo = "arrival"
+        elif (self.departureRadioButton.isChecked()):
+            algo = "departure"
+        else:
+            return
+        self.rooms= [
+            [0,0,0],
+            [0,0,0],
+            [0,0,0],
+            [0,0,0],
+        ]
+        
+        self.tableWidget.clearContents()
+        self.tableWidget.setRowCount(4)
+        time_slots = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", 
+                      "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", 
+                      "4:00 PM", "5:00 PM"]
+        self.tableWidget.setColumnCount(len(time_slots))
+        self.tableWidget.setHorizontalHeaderLabels(time_slots)
+        self.room_patients_count = [[0] * 10 for _ in range(4)]
+        patient_in_rooms =0
+        for patient in self.sorted_patients[algo]:
+            
+            arrival_hour = int(patient.arrival_time.split(':')[0]) - 8
+            if 'PM' in patient.arrival_time and arrival_hour != 12:
+                arrival_hour += 12
+            departure_hour = int(patient.departure_time.split(':')[0]) - 8
+            if 'PM' in patient.departure_time and departure_hour != 12:
+                departure_hour += 12
+
+            if 0 <= arrival_hour < 10 and 0 <= departure_hour < 10:
+                time_slot_index = arrival_hour
+                for room in self.rooms:
+
+                    if arrival_hour >= room[1] or (departure_hour <= room[0]):
+                        
+                        room_index = self.rooms.index(room)
+                        room[0] = min(room[0],arrival_hour) if sum(room)!=0 else arrival_hour
+                        room[1] = max(room[1],departure_hour)
+                        
+
+                        self.tableWidget.setItem(room_index, time_slot_index, 
+                                                    QtWidgets.QTableWidgetItem(patient.name))
+                        self.color_cells(room_index, time_slot_index, departure_hour-1, QtGui.QColor(COLORS[room[2]])) 
+                        self.room_patients_count[room_index][time_slot_index] += 1
+                        patient_in_rooms +=1
+                        room[2]+=1
+                        break
+                    
+                waiting = len(self.sorted_patients[algo]) - patient_in_rooms
+                self.waitingLcdNumber.display(waiting)
+            
+
+
+    
+
 
 
     def retranslateUi(self, MainWindow):
