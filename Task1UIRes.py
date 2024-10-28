@@ -170,10 +170,9 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-        # Connect the "Add Patient" button and "Delete Patient" button
         self.addPatientButton.clicked.connect(self.add_patient)
         self.deletePatientButton.clicked.connect(self.delete_patient)
-        # Connect updateButton to update schedule function
+
         self.updateButton.clicked.connect(self.update_schedule)
         self.sorted_patients = {
             "severity":[],
@@ -220,10 +219,11 @@ class Ui_MainWindow(object):
 
   
     def insert_patient(self, new_patient):
+        self.patients.append(new_patient)
         if len(self.sorted_patients["severity"])==0 :
             for key in self.sorted_patients:
                 self.sorted_patients[key].append(new_patient)
-        else:
+        else: 
             for i in range(len(self.sorted_patients["severity"])):
                 if new_patient.severity > self.sorted_patients["severity"][i].severity:  
                     self.sorted_patients["severity"].insert(i, new_patient)  
@@ -250,8 +250,13 @@ class Ui_MainWindow(object):
 
     def delete_patient(self):
         index = self.patientsComboBox.currentIndex()
-        if index >= 0:  
+        if index >= 0 and index < len(self.patients):  
+            patient_to_delete = self.patients[index]
+            for key in self.sorted_patients:
+                if patient_to_delete in self.sorted_patients[key]:
+                    self.sorted_patients[key].remove(patient_to_delete)
             del self.patients[index]
+
             self.patientsComboBox.removeItem(index)
 
     def add_patient_to_combo_box(self, patient):
@@ -283,7 +288,6 @@ class Ui_MainWindow(object):
                       "4:00 PM", "5:00 PM"]
         self.tableWidget.setColumnCount(len(time_slots))
         self.tableWidget.setHorizontalHeaderLabels(time_slots)
-        self.room_patients_count = [[0] * 10 for _ in range(4)]
         patient_in_rooms =0
         for patient in self.sorted_patients[algo]:
             
@@ -308,7 +312,7 @@ class Ui_MainWindow(object):
                         self.tableWidget.setItem(room_index, time_slot_index, 
                                                     QtWidgets.QTableWidgetItem(patient.name))
                         self.color_cells(room_index, time_slot_index, departure_hour-1, QtGui.QColor(COLORS[room[2]])) 
-                        self.room_patients_count[room_index][time_slot_index] += 1
+
                         patient_in_rooms +=1
                         room[2]+=1
                         break
