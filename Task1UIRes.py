@@ -2,10 +2,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from patient import Patient
 from datetime import datetime
 
-COLORS = ["blue", "green", "yellow", "red"]
-TIME_SLOTS = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", 
-                      "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", 
-                      "4:00 PM", "5:00 PM"]
+COLORS = ["#ecf0f1", "#bdc3c7", "#7f8c8d", "#95a5a6", "#2c3e50", "#34495e"]
+FONT_COLORS = ["#2C3E50", "#2C3E50", "#ECF0F1", "#2C3E50", "#ECF0F1", "#ECF0F1"]
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -184,12 +183,17 @@ class Ui_MainWindow(object):
         }
         self.waiting = 0
 
+
+
+
+
     def reset_inputs(self):
         self.idLineEdit.clear()
         self.nameLineEdit.clear()
         self.arrivalTimeEdit.setTime(QtCore.QTime(8, 0))
-        self.departureTimeEdit.setTime(QtCore.QTime(8, 0))
+        self.departureTimeEdit.setTime(QtCore.QTime(17, 0))
         self.severitySpinBox.setValue(0)
+
 
     def add_patient(self):
         id = self.idLineEdit.text()
@@ -203,6 +207,8 @@ class Ui_MainWindow(object):
         self.add_patient_to_combo_box(new_patient)
         self.reset_inputs()
 
+
+
     def color_cells(self, room_index, start_slot, end_slot, color):
         for col in range(start_slot, end_slot + 1):
             item = self.tableWidget.item(room_index, col)
@@ -212,7 +218,8 @@ class Ui_MainWindow(object):
                 new_item = QtWidgets.QTableWidgetItem()
                 new_item.setBackground(color)
                 self.tableWidget.setItem(room_index, col, new_item)
- 
+
+  
     def insert_patient(self, new_patient):
         if len(self.sorted_patients["severity"])==0 :
             for key in self.sorted_patients:
@@ -241,32 +248,23 @@ class Ui_MainWindow(object):
             else:
                 self.sorted_patients["departure"].append(new_patient)
 
+
     def delete_patient(self):
         index = self.patientsComboBox.currentIndex()
-        selected_text = self.patientsComboBox.currentText()
-        print("Combo box selected:", selected_text)
-
         if index >= 0 and index < len(self.patients):  
             patient_to_delete = self.patients[index]
-
-            print(patient_to_delete.name)
-            self.patients.remove(patient_to_delete)
-            
-            # Remove from each sorted list in self.sorted_patients
             for key in self.sorted_patients:
                 if patient_to_delete in self.sorted_patients[key]:
                     self.sorted_patients[key].remove(patient_to_delete)
+            del self.patients[index]
 
-            # Remove the patient from the ComboBox
             self.patientsComboBox.removeItem(index)
-            for sort_key, patient_list in self.sorted_patients.items():
-                print(f"\nPatients sorted by {sort_key}:")
-                for patient in patient_list:
-                    print(f" - {patient.name}")
 
     def add_patient_to_combo_box(self, patient):
         patient_info = f"{patient.name} (ID: {patient.id}, Severity: {patient.severity}) (Arrival: {patient.arrival_time}, Departure: {patient.departure_time}) "
         self.patientsComboBox.addItem(patient_info)
+
+
 
     def update_schedule(self):
         if(self.severityRadioButton.isChecked()):
@@ -286,8 +284,11 @@ class Ui_MainWindow(object):
         
         self.tableWidget.clearContents()
         self.tableWidget.setRowCount(4)
-        self.tableWidget.setColumnCount(len(TIME_SLOTS))
-        self.tableWidget.setHorizontalHeaderLabels(TIME_SLOTS)
+        time_slots = ["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", 
+                      "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", 
+                      "4:00 PM", "5:00 PM"]
+        self.tableWidget.setColumnCount(len(time_slots))
+        self.tableWidget.setHorizontalHeaderLabels(time_slots)
         patient_in_rooms =0
         for patient in self.sorted_patients[algo]:
             
@@ -309,9 +310,20 @@ class Ui_MainWindow(object):
                         room[1] = max(room[1],departure_hour)
                         
 
-                        self.tableWidget.setItem(room_index, time_slot_index, 
-                                                    QtWidgets.QTableWidgetItem(patient.name))
-                        self.color_cells(room_index, time_slot_index, departure_hour-1, QtGui.QColor(COLORS[room[2]])) 
+                        item = QtWidgets.QTableWidgetItem(patient.name)
+
+                        # Set font to bold and increase size for visibility
+                        font = QtGui.QFont()
+                        font.setBold(True)
+                        font.setPointSize(10)  # Adjust the size as needed
+                        item.setFont(font)
+
+                        # Optional: Set text color to ensure contrast
+                        item.setForeground(QtGui.QBrush(QtGui.QColor(FONT_COLORS[room[2]%6]))) 
+
+                        # Set the item in the table and color the cell
+                        self.tableWidget.setItem(room_index, time_slot_index, item)
+                        self.color_cells(room_index, time_slot_index, departure_hour - 1, QtGui.QColor((COLORS[room[2]%6])))
 
                         patient_in_rooms +=1
                         room[2]+=1
@@ -320,6 +332,12 @@ class Ui_MainWindow(object):
                 waiting = len(self.sorted_patients[algo]) - patient_in_rooms
                 self.waitingLcdNumber.display(waiting)
             
+
+
+    
+
+
+
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
